@@ -418,6 +418,13 @@ def lip_palette():
         'Right-shoe'
     ]
 
+def forensics_classes():
+    return ['original', 'tampered']
+
+
+def forensics_palette():
+    return [[0,0,0],[255,255,255]]
+
 
 dataset_aliases = {
     'cityscapes': ['cityscapes'],
@@ -435,7 +442,8 @@ dataset_aliases = {
     'stare': ['stare', 'STARE'],
     'lip': ['LIP', 'lip'],
     'mapillary_v1': ['mapillary_v1'],
-    'mapillary_v2': ['mapillary_v2']
+    'mapillary_v2': ['mapillary_v2'],
+    'forensics':['forensics']
 }
 
 
