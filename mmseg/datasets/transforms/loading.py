@@ -96,7 +96,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         gt_semantic_seg = mmcv.imfrombytes(
             img_bytes, flag='unchanged',
             backend=self.imdecode_backend).squeeze().astype(np.uint8)
-
+        #避免gt的通道不是1的时候这一步报错
+        if gt_semantic_seg.ndim > 2:
+            gt_semantic_seg=gt_semantic_seg[:,:,0]
         # reduce zero_label
         if self.reduce_zero_label is None:
             self.reduce_zero_label = results['reduce_zero_label']
@@ -117,6 +119,9 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             gt_semantic_seg_copy = gt_semantic_seg.copy()
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
+        #懒得用label_map加了这一句直接支持二分类
+        gt_semantic_seg_copy = gt_semantic_seg.copy()
+        gt_semantic_seg[gt_semantic_seg_copy == 255] = 1
         results['gt_seg_map'] = gt_semantic_seg
         results['seg_fields'].append('gt_seg_map')
 
