@@ -35,6 +35,7 @@ from .transforms import (CLAHE, AdjustGamma, BioMedical3DPad,
 from .voc import PascalVOCDataset
 from .cod import  COD10KDataset
 from .forensics import ForensicsDataset
+from .Forgery import ForgeryDataset
 # yapf: enable
 __all__ = [
     'BaseSegDataset','BaseTampDataset', 'BioMedical3DRandomCrop', 'BioMedical3DRandomFlip',
@@ -52,5 +53,5 @@ __all__ = [
     'BioMedicalGaussianNoise', 'BioMedicalGaussianBlur',
     'BioMedicalRandomGamma', 'BioMedical3DPad', 'RandomRotFlip',
     'SynapseDataset', 'REFUGEDataset', 'MapillaryDataset_v1',
-    'MapillaryDataset_v2','COD10KDataset','ForensicsDataset'
+    'MapillaryDataset_v2','COD10KDataset','ForensicsDataset','ForgeryDataset'
 ]

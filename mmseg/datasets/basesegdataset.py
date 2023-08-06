@@ -1,4 +1,5 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+# Copyright (c) OpenMMLab. All rights reserved.
 import copy
 import os.path as osp
 from typing import Callable, Dict, List, Optional, Sequence, Union
@@ -96,12 +97,14 @@ class BaseSegDataset(BaseDataset):
                  max_refetch: int = 1000,
                  ignore_index: int = 255,
                  reduce_zero_label: bool = False,
+                 global_class: int = 1,
                  backend_args: Optional[dict] = None) -> None:
 
         self.img_suffix = img_suffix
         self.seg_map_suffix = seg_map_suffix
         self.ignore_index = ignore_index
         self.reduce_zero_label = reduce_zero_label
+        self.global_class = global_class
         self.backend_args = backend_args.copy() if backend_args else None
 
         self.data_root = data_root
@@ -248,6 +251,7 @@ class BaseSegDataset(BaseDataset):
                 data_info['label_map'] = self.label_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
                 data_info['seg_fields'] = []
+                data_info['global_class'] = self.global_class
                 data_list.append(data_info)
         else:
             for img in fileio.list_dir_or_file(
@@ -263,6 +267,7 @@ class BaseSegDataset(BaseDataset):
                 data_info['label_map'] = self.label_map
                 data_info['reduce_zero_label'] = self.reduce_zero_label
                 data_info['seg_fields'] = []
+                data_info['global_class'] = self.global_class
                 data_list.append(data_info)
             data_list = sorted(data_list, key=lambda x: x['img_path'])
         return data_list
