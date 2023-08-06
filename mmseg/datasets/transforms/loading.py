@@ -65,6 +65,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
         reduce_zero_label=None,
         backend_args=None,
         imdecode_backend='pillow',
+        binary=False,
     ) -> None:
         super().__init__(
             with_bbox=False,
@@ -80,6 +81,7 @@ class LoadAnnotations(MMCV_LoadAnnotations):
                           'set `reduce_zero_label=True` when dataset '
                           'initialized')
         self.imdecode_backend = imdecode_backend
+        self.binary=binary
 
     def _load_seg_map(self, results: dict) -> None:
         """Private function to load semantic segmentation annotations.
@@ -120,8 +122,8 @@ class LoadAnnotations(MMCV_LoadAnnotations):
             for old_id, new_id in results['label_map'].items():
                 gt_semantic_seg[gt_semantic_seg_copy == old_id] = new_id
         #懒得用label_map加了这一句直接支持二分类
-        gt_semantic_seg_copy = gt_semantic_seg.copy()
-        gt_semantic_seg[gt_semantic_seg_copy == 255] = 1
+        if self.binary:
+            gt_semantic_seg[gt_semantic_seg > 0] = 1
         results['gt_seg_map'] = gt_semantic_seg
         results['seg_fields'].append('gt_seg_map')
 
