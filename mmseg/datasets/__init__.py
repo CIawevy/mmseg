@@ -1,7 +1,7 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 # yapf: disable
 from .ade import ADE20KDataset
-from .basesegdataset import BaseSegDataset,BaseTampDataset
+from .basesegdataset import BaseSegDataset
 from .chase_db1 import ChaseDB1Dataset
 from .cityscapes import CityscapesDataset
 from .coco_stuff import COCOStuffDataset
@@ -34,11 +34,10 @@ from .transforms import (CLAHE, AdjustGamma, BioMedical3DPad,
                          ResizeToMultiple, RGB2Gray, SegRescale)
 from .voc import PascalVOCDataset
 from .cod import  COD10KDataset
-from .forensics import ForensicsDataset
-from .Forgery import ForgeryDataset
+from .Forensic import ForensicsDataset
 # yapf: enable
 __all__ = [
-    'BaseSegDataset','BaseTampDataset', 'BioMedical3DRandomCrop', 'BioMedical3DRandomFlip',
+    'BaseSegDataset', 'BioMedical3DRandomCrop', 'BioMedical3DRandomFlip',
     'CityscapesDataset', 'PascalVOCDataset', 'ADE20KDataset',
     'PascalContextDataset', 'PascalContextDataset59', 'ChaseDB1Dataset',
     'DRIVEDataset', 'HRFDataset', 'STAREDataset', 'DarkZurichDataset',
@@ -53,5 +52,5 @@ __all__ = [
     'BioMedicalGaussianNoise', 'BioMedicalGaussianBlur',
     'BioMedicalRandomGamma', 'BioMedical3DPad', 'RandomRotFlip',
     'SynapseDataset', 'REFUGEDataset', 'MapillaryDataset_v1',
-    'MapillaryDataset_v2','COD10KDataset','ForensicsDataset','ForgeryDataset'
+    'MapillaryDataset_v2','COD10KDataset','ForensicsDataset',
 ]

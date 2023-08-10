@@ -3,7 +3,7 @@ from .basesegdataset import BaseSegDataset
 
 
 @DATASETS.register_module()
-class ForgeryDataset(BaseSegDataset):
+class ForensicsDataset(BaseSegDataset):
     """COD dataset.
 
     In segmentation map annotation for Forgery, 0 stands for background,
@@ -14,7 +14,7 @@ class ForgeryDataset(BaseSegDataset):
     """
 
     METAINFO = dict(
-        classes=('background', 'object'),
+        classes=('original', 'tampered'),
         palette=[0, 255],
     )
 

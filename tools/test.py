@@ -2,7 +2,7 @@
 import argparse
 import os
 import os.path as osp
-
+# os.environ['CUDA_VISIBLE_DEVICES']='1'
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
@@ -11,14 +11,16 @@ from mmengine.runner import Runner
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMSeg test (and eval) a model')
-    parser.add_argument('config', help='train config file path')
-    parser.add_argument('checkpoint', help='checkpoint file')
+    parser.add_argument('--config',default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_NoiseAdapter_base.py" , help='train config file path')
+    parser.add_argument('--checkpoint', help='checkpoint file')
     parser.add_argument(
         '--work-dir',
+        default="/home/ipad_ind/hszhu/test-dir/debug/",
         help=('if specified, the evaluation metric results will be dumped'
               'into the directory as json'))
     parser.add_argument(
         '--out',
+        # default="/data/hszhu/predict/",
         type=str,
         help='The directory to save output prediction for offline evaluation')
     parser.add_argument(

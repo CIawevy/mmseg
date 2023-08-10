@@ -18,10 +18,12 @@ class ForensicsDataset(BaseTampDataset):
     def __init__(self,
                  img_suffix='.jpg',
                  seg_map_suffix='.png',
+                 is_real=False,
                  **kwargs) -> None:
         super().__init__(
             img_suffix=img_suffix,
             seg_map_suffix=seg_map_suffix,
             reduce_zero_label=False,
             ignore_index=255,
+            is_real=is_real,
             **kwargs)

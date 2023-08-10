@@ -18,13 +18,13 @@ from os import path  as osp
 da = data_assistant()
 # config = "/data/hszhu/code/mmseg_project/configs/sam/Tamp_Sam_base.py"
 # checkpoint = "/data/hszhu/code/mmseg_project/pretrained/vit-base-p16_SAM-pre_3rdparty_sa1b-1024px_20230411-2320f9cc.pth"
-save_prefix="/data/Forgery/test/_TEST_CASIAv1+/Tp/Heat_map/"
-img_iter=iter(sorted(da.get_data(srcpath="/data/Forgery/test/_TEST_CASIAv1+/Tp/image/",depth=1)))
+save_prefix="/data/ipad/Forgery/test/NIST16/Heat_map/"
+img_iter=iter(sorted(da.get_data(srcpath="/data/ipad/Forgery/test/NIST16/image/",depth=1)))
 count=0
 tmp=""
-# layer_num=12 #SAM base
+layer_num=12 #SAM base
 # layer_num=24 # SAM large
-layer_num=32 #SAM Huge
+# layer_num=32 #SAM Huge
 
 
 def draw_heatmap(featmap):

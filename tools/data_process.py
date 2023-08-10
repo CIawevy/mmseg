@@ -487,19 +487,20 @@ da.ready_for_train(image_path=image_path,annotation_path=mask_path,return_error_
 """
 
 # Demo comp_Raise image 改名以和mask匹配
-# def  rename_rules(filename):
-#     i = 1 if filename[:3] =='100' else 0
-#     j = 1 if filename[25+i:28+i] =='100' else 0
-#     k = 1 if filename[54+i+j:57+i+j] =='100' else 0
-#     l = 1 if filename[-3:] == '100' else 0
-#     return filename[:15+i]+filename[27+i+j:44+i+j]+filename[56+i+j+k:-(12+l)]
+def  rename_rules(filename):
+    i = 1 if filename[:3] =='100' else 0
+    j = 1 if filename[25+i:28+i] =='100' else 0
+    k = 1 if filename[54+i+j:57+i+j] =='100' else 0
+    l = 1 if filename[-3:] == '100' else 0
+    return filename[:15+i]+filename[27+i+j:44+i+j]+filename[56+i+j+k:-(12+l)]
 # da=data_assistant()
-# src="/data/Forgery/train/IMD2020/TP/GT/"
-# "/data/Forgery/train/IMD2020/TP/image/"
+# src="/data/ipad/Forgery/tampCOCO/bcmc_images/"
+# dst="/data/ipad/Forgery/tampCOCO/compress_image/"
+# da.rename(srcfile=src,depth=1,dstpath=dst,rename_rules=rename_rules)
 
 
-# da.ready_for_train(image_path="/data/Forgery/train/tampRAISE/TP/compress_image/",annotation_path="/data/Forgery/train/tampRAISE/TP/GT/")
-# info=da.get_info(srcfile="/data/Forgery/train/tampRAISE/TP/compress_image/",suffix=False,channel=False)
+# da.ready_for_train(image_path="/data/ipad/Forgery/tampCOCO/compress_image/",annotation_path="/data/ipad/Forgery/train/tampRAISE/TP/GT")
+# info=da.get_info(srcfile="/data/ipad/Forgery/train/tampRAISE/TP/compress_image/",suffix=False,channel=False)
 # for k in info.keys():
 #     print(info[k])
 # print("success")
