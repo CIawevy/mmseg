@@ -50,11 +50,13 @@ class SelfRandomResize(BaseTransform):
         min_ratio, max_ratio = self.ratio_range
         ratio = np.random.random_sample() * (max_ratio - min_ratio) + min_ratio
         scale = int(W * ratio),int(H * ratio)
-        img=mmcv.imresize(img=results["img"],size=scale,interpolation=self.interpolation,backend=self.backend)
-        results['img'] = img
-        results['img_shape'] = img.shape[:2]
-        gt_seg=mmcv.imresize(img=results['gt_seg_map'],size=scale,interpolation='nearest',backend=self.backend)#mmcv.imresize 必须W，H的顺序
-        results['gt_seg_map'] = gt_seg
+        if 'img' in results.keys():
+            img=mmcv.imresize(img=results["img"],size=scale,interpolation=self.interpolation,backend=self.backend)
+            results['img'] = img
+            results['img_shape'] = img.shape[:2]
+        if 'gt_seg_map' in results.keys():
+            gt_seg=mmcv.imresize(img=results['gt_seg_map'],size=scale,interpolation='nearest',backend=self.backend)#mmcv.imresize 必须W，H的顺序
+            results['gt_seg_map'] = gt_seg
         return results
 
 @TRANSFORMS.register_module()

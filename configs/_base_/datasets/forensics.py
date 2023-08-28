@@ -23,7 +23,8 @@ train_pipeline = [
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    #dict(type='Resize', scale=crop_size),
+    # dict(type='Resize', scale=crop_size),
+    dict(type='SelfRandomResize', ratio_range=(1.5, 2)),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
     dict(type='LoadAnnotations', binary=True),
@@ -32,7 +33,7 @@ test_pipeline = [
 
 CASIAv2_tamp_train_dataset = dict(
     type='RepeatDataset',
-    times=1,
+    times=5,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -44,7 +45,7 @@ CASIAv2_tamp_train_dataset = dict(
 )
 CASIAv2_authentic_train_dataset = dict(
     type='RepeatDataset',
-    times=1,
+    times=5,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -58,7 +59,7 @@ CASIAv2_authentic_train_dataset = dict(
 
 IMD2020_tamp_train_dataset = dict(
     type='RepeatDataset',
-    times=1,
+    times=10,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -70,7 +71,7 @@ IMD2020_tamp_train_dataset = dict(
 )
 IMD2020_authentic_train_dataset = dict(
     type='RepeatDataset',
-    times=1,
+    times=10,
     dataset=dict(
         type=dataset_type,
         data_root=data_root,
@@ -135,7 +136,13 @@ tampRAISE_authentic_train_dataset = dict(
 concatenate_dataset = dict(
     type='ConcatDataset',
     #datasets=[CASIAv2_tamp_train_dataset, dataset_CASIA_train0, IMD2020_tamp_train_dataset, dataset_IMD2020_train0, tampCOCO_train_dataset, tampRAISE_tamp_train_dataset, dataset_tampRAISE_train0]
-    datasets=[CASIAv2_tamp_train_dataset,CASIAv2_authentic_train_dataset, IMD2020_tamp_train_dataset, IMD2020_authentic_train_dataset, tampCOCO_train_dataset, tampRAISE_compress_tamp_train_dataset,tampRAISE_authentic_train_dataset]
+    datasets=[CASIAv2_tamp_train_dataset,
+              CASIAv2_authentic_train_dataset,
+              IMD2020_tamp_train_dataset,
+              IMD2020_authentic_train_dataset,
+              tampCOCO_train_dataset,
+              tampRAISE_compress_tamp_train_dataset,
+              tampRAISE_authentic_train_dataset]
 )
 
 train_dataloader = dict(
@@ -236,6 +243,7 @@ NIST16_tamp_test_dataset=dict(
     type=dataset_type,
     data_root="/data/ipad/Forgery/test/NIST16/",
     global_class=1,
+    # indices=30,
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
@@ -249,7 +257,7 @@ OpenForensics_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=1400,
+    indices=200,
     pipeline=test_pipeline)
 
 OpenForensics_authentic_test_dataset=dict(
@@ -259,7 +267,7 @@ OpenForensics_authentic_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=600,
+    indices=100,
     pipeline=test_pipeline)
 
 OpenForensics_all_test_dataset=dict(
@@ -274,7 +282,7 @@ val_dataloader = dict(
     sampler=dict(type='DefaultSampler', shuffle=False),
     dataset=dict(
         type='ConcatDataset',
-        datasets=[OpenForensics_all_test_dataset])
+        datasets=[Columbia_all_test_dataset])
 
 )
 
@@ -287,7 +295,7 @@ test_dataloader = dict(
         type='ConcatDataset',
         datasets=[
             # OpenForensics_all_test_dataset,
-            Columbia_tamp_test_dataset
+            CASIAv1_plus_all_test_dataset,
             ])
 
 )

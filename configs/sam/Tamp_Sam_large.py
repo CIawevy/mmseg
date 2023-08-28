@@ -1,6 +1,7 @@
 _base_ = [
     './Tamp_Sam_NoiseAdapter_base.py'
     # './Visualizer_SAM_base.py'
+    # 'Tamp_Sam_base.py'
 ]
 
 checkpoint="/home/ipad_ind/hszhu/pretrained/vit-large-p16_SAM-pre_3rdparty_sa1b-1024px_20230411-595feafd.pth"

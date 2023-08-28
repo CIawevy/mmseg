@@ -2,17 +2,24 @@
 import argparse
 import os
 import os.path as osp
-# os.environ['CUDA_VISIBLE_DEVICES']='1'
+# os.environ['CUDA_VISIBLE_DEVICES']='0'
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
 
 # TODO: support fuse_conv_bn, visualization, and format_only
+#default="/home/ipad_ind/hszhu/mmseg/configs/segformer/segformer_mit-b3_8xb2-160k_Forensics800k-512x512.py"
+#default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py"
+#checkpoint
+#default="/home/ipad_ind/hszhu/work-dir/segformer/iter_160000.pth"
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMSeg test (and eval) a model')
-    parser.add_argument('--config',default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_NoiseAdapter_base.py" , help='train config file path')
-    parser.add_argument('--checkpoint', help='checkpoint file')
+    parser.add_argument('--config',default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py",
+                        help='train config file path')
+    parser.add_argument('--checkpoint',default="/home/ipad_ind/hszhu/work-dir/segformer/iter_160000.pth"
+                        ,help='checkpoint file')
     parser.add_argument(
         '--work-dir',
         default="/home/ipad_ind/hszhu/test-dir/debug/",

@@ -1,5 +1,5 @@
 _base_ = [
-    '../_base_/models/SAM.py', '../_base_/datasets/forensics.py',
+    '../_base_/models/SAM.py', '../_base_/datasets/forensic_light.py',
     '../_base_/default_runtime.py', '../_base_/schedules/schedule_160k.py'
 ]
 crop_size = (512, 512)
@@ -18,7 +18,7 @@ model = dict(
 default_hooks = dict(
     checkpoint=dict(interval=8000,max_keep_ckpts=5),
 )
-
+val_cfg =None #use when testing
 train_cfg = dict(
     type='IterBasedTrainLoop', max_iters=160000, val_interval=16000)
 
