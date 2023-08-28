@@ -845,7 +845,7 @@ class VisSAM(BaseModule):
 
     def forward(self, x: torch.Tensor):
         from startup import draw_heatmap
-        draw_heatmap(x)
+        # draw_heatmap(x)
         B, C, H, W = x.size()
         # inp = torch.empty((B, C, H, W), dtype=x.dtype, device=x.device)
         # mean = torch.tensor(self.mean).view(-1, 1, 1).to(x.device)
@@ -883,12 +883,14 @@ class VisSAM(BaseModule):
             # x = prompt[i].reshape(B, patch_resolution[0], patch_resolution[1], -1) + x
             x = layer(x)
             featmap = x.permute(0, 3, 1, 2)
-            draw_heatmap(featmap)
+
 
             if i in self.global_attn_indexes:
-               x_reshape = x.permute(0, 3, 1, 2)
-               outs.append(x_reshape)
-
+                x_reshape = x.permute(0, 3, 1, 2)
+                outs.append(x_reshape)
+                draw_heatmap(featmap, index=i, glob=True)
+            else:
+                draw_heatmap(featmap, index=i)
             if i in self.out_indices:
                 # (B, H, W, C) -> (B, C, H, W)
                 x_reshape = x.permute(0, 3, 1, 2)

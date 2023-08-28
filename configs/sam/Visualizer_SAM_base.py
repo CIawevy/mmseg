@@ -6,6 +6,7 @@ _base_ = [
 crop_size = (512, 512)
 data_preprocessor = dict(size=crop_size)
 train_dataloader = dict(batch_size=4, num_workers=4)
+val_cfg =None #use when testing
 
 model = dict(
     data_preprocessor=data_preprocessor,

@@ -11,32 +11,28 @@ from mmengine.model import revert_sync_batchnorm
 from tools.data_process import data_assistant
 from os import path  as osp
 
-# prefix = "mmsegmentation-1.0.0rc5/"
-# prefix = ""
-# config = prefix + r"log\7_ttpla_p2t_t_20k\ttpla_p2t_t_20k.py"
-# checkpoint = prefix + r"log\7_ttpla_p2t_t_20k\iter_8000.pth"
 da = data_assistant()
 # config = "/data/hszhu/code/mmseg_project/configs/sam/Tamp_Sam_base.py"
 # checkpoint = "/data/hszhu/code/mmseg_project/pretrained/vit-base-p16_SAM-pre_3rdparty_sa1b-1024px_20230411-2320f9cc.pth"
-save_prefix="/data/ipad/Forgery/test/NIST16/Heat_map/"
-img_iter=iter(sorted(da.get_data(srcpath="/data/ipad/Forgery/test/NIST16/image/",depth=1)))
-count=0
+save_prefix="/data/ipad/Forgery/test/Tampered-IC13/Heat2"
+if not osp.exists(save_prefix):
+    os.mkdir(save_prefix)
+img_iter=iter(sorted(da.get_data(srcpath="/data/ipad/Forgery/test/Tampered-IC13/test_img/",depth=1)))
 tmp=""
-layer_num=12 #SAM base
+# layer_num=12 #SAM base
 # layer_num=24 # SAM large
 # layer_num=32 #SAM Huge
 
 
-def draw_heatmap(featmap):
+def draw_heatmap(featmap,index=-1,glob=False):
     featmap=featmap[0]
     # path="/data/Forgery/test/Columbia/TP/Heat_map/"
     # featmap=featmap.permute(1,2,0).cpu().detach().numpy()
     # cv2.imwrite(osp.join(path,'original.jpg'),featmap)
     # a=1/0
-    global count,tmp,img_iter,layer_num
+    global tmp,img_iter
     vis = SegLocalVisualizer()
-    count+= 1 if count <layer_num+1 else -layer_num
-    if count == 1:
+    if index == 0:
         img_path = next(img_iter)
         tmp=img_path
     else:
@@ -46,12 +42,12 @@ def draw_heatmap(featmap):
         os.mkdir(savedir)
     ori_img = cv2.imread(img_path)
     out = vis.draw_featmap(featmap, ori_img,overlaid=False)
-    n=1
-    newname=osp.join(savedir,'feature'+str(n)+'.'+da.get_suffix(img_path))
-    while osp.exists(newname):
-        n+=1
-        newname=osp.join(savedir,'feature'+str(n)+'.'+da.get_suffix(img_path))
-    # print(newname)
+    n=index
+    if glob:
+        newname=osp.join(savedir,'feature'+str(n)+'a.'+da.get_suffix(img_path))
+    else:
+        newname = osp.join(savedir, 'feature' + str(n) + '.' + da.get_suffix(img_path))
+
     cv2.imwrite(newname,out)
     # cv2.imshow('cam', out)
     # cv2.waitKey(0)

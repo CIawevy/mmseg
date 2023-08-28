@@ -2,18 +2,19 @@
 
 dataset_type = 'ForensicsDataset'
 data_root = '/data/ipad/Forgery/'
-crop_size = (512, 512)
+crop_size = (1024, 1024)
 #crop_size = (352, 352)
-
+# NIST OPENFOR 数据集图像太大 直接放进去会导致attention步骤超内存 90多个G显然是不可以的
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    #dict(type='Resize', scale=crop_size),
+    # dict(type='Resize', scale=crop_size),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
     dict(type='LoadAnnotations', binary=True),
     dict(type='PackSegInputs')
 ]
+
 
 # Test_dataset = dict(
 #     type='ConcatDataset',
@@ -42,6 +43,7 @@ CASIAv1_plus_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
+    indices=2,
     pipeline=test_pipeline)
 
 CASIAv1_plus_all_test_dataset=dict(
@@ -93,6 +95,7 @@ COVERAGE_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
+    indices=5,
     pipeline=test_pipeline)
 
 COVERAGE_all_test_dataset=dict(
@@ -107,7 +110,7 @@ NIST16_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=5,
+    indices=2,
     pipeline=test_pipeline)
 
 #OpenForensics
@@ -118,7 +121,7 @@ OpenForensics_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=1400,
+    indices=2,
     pipeline=test_pipeline)
 
 OpenForensics_authentic_test_dataset=dict(
@@ -128,14 +131,22 @@ OpenForensics_authentic_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=600,
+    indices=6,
     pipeline=test_pipeline)
 
 OpenForensics_all_test_dataset=dict(
     type='ConcatDataset',
     datasets=[OpenForensics_tamp_test_dataset, OpenForensics_authentic_test_dataset])
 
-
+tampIC13_tamp_test_dataset=dict(
+    type=dataset_type,
+    data_root="/data/ipad/Forgery/test/Tampered-IC13/",
+    global_class=1,
+    data_prefix=dict(
+        img_path="test_img",
+        seg_map_path="test_mask"),
+    indices=[2,3],
+    pipeline=test_pipeline)
 
 test_dataloader = dict(
     batch_size=1,
@@ -145,9 +156,13 @@ test_dataloader = dict(
     dataset=dict(
         type='ConcatDataset',
         datasets=[
-            # OpenForensics_all_test_dataset,
-            Columbia_tamp_test_dataset
-            ])
+            # OpenForensics_tamp_test_dataset,
+            # Columbia_tamp_test_dataset
+            # CASIAv1_plus_tamp_test_dataset,
+            # COVERAGE_tamp_test_dataset
+            # NIST16_tamp_test_dataset,
+            tampIC13_tamp_test_dataset
+        ])
 
 )
 
