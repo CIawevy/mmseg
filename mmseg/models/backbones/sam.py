@@ -301,14 +301,14 @@ class PromptGenerator(nn.Module):
     def NoP(self, x):
         return self.prompt_generator_NoP(x)
 
-    def get_prompt(self, handcrafted_feature, embedding_feature):
+    def get_prompt(self, handcrafted_feature, embedding_feature,other_feature):
         #N, C, H, W = handcrafted_feature.shape
         #handcrafted_feature = handcrafted_feature.view(N, C, H * W).permute(0, 2, 1)
         prompts = []
         for i in range(self.depth):
             lightweight_mlp = getattr(self, 'lightweight_mlp_{}'.format(str(i)))
             # prompt = proj_prompt(prompt)
-            prompt = lightweight_mlp(handcrafted_feature + embedding_feature)
+            prompt = lightweight_mlp(handcrafted_feature + embedding_feature + other_feature)
             prompts.append(self.shared_mlp(prompt))
         return prompts
 
@@ -826,22 +826,25 @@ class ViTSAM(BaseModule):
         self.drop_after_pos.eval()
         # freeze patch embedding
         self.patch_embed.eval()
-        for param in self.patch_embed.parameters():
+        for name,param in self.patch_embed.named_parameters():#无norm
             param.requires_grad = False
 
         # freeze layers
         for i in range(1, self.frozen_stages + 1):
             m = self.layers[i - 1]
             m.eval()
-            for param in m.parameters():
-                param.requires_grad = False
+            for name,param in m.named_parameters():
+                if name not in ['ln1.weight','ln1.bias','ln2.weight','ln2.bias'] :
+                    param.requires_grad = False
 
         # freeze channel_reduction module
         if self.frozen_stages == self.num_layers and self.out_channels > 0:
             m = self.channel_reduction
             m.eval()
-            for param in m.parameters():
-                param.requires_grad = False
+            for name,param in m.named_parameters(): #channel_reduction 预训练权重卷积全是1 norm 继续微调
+                # if name not in ['1.weight', '1.bias', '3.weight', '3.bias'] :
+                if name  in [ '0.weight' , '2.weight' ]:
+                    param.requires_grad = False
 
         # for name, para in self.dncnn.named_parameters():
         #    para.requires_grad = False
@@ -850,7 +853,7 @@ class ViTSAM(BaseModule):
 
     def forward(self, x: torch.Tensor):
         B, C, H, W = x.size()
-        # tmp=x
+        tmp=x
         inp = torch.empty((B, C, H, W), dtype=x.dtype, device=x.device)
         mean = torch.tensor(self.mean).view(-1, 1, 1).to(x.device)
         std = torch.tensor(self.std).view(-1, 1, 1).to(x.device)
@@ -861,12 +864,12 @@ class ViTSAM(BaseModule):
 
         x, patch_resolution = self.patch_embed(x)
         embedding_feature = self.prompt_generator.init_embeddings(x)
-        # frequency_feature = self.prompt_generator.init_handcrafted(tmp)
+        frequency_feature = self.prompt_generator.init_handcrafted(tmp)
         (Noise_feature, _) = self.prompt_generator.NoP(self.dncnn(inp))
-        # prompt_f = self.prompt_generator.get_prompt(frequency_feature, embedding_feature)
-        prompt_n = self.prompt_generator.get_prompt(Noise_feature, embedding_feature)
+        prompt = self.prompt_generator.get_prompt(frequency_feature, embedding_feature, Noise_feature)
+        # prompt_n = self.prompt_generator.get_prompt(Noise_feature, embedding_feature)
         # prompt=[prompt_n[i]+prompt_f[i] for i in range(len(prompt_f))]
-        prompt=prompt_n
+        # prompt=prompt_n
         x = x.view(B, patch_resolution[0], patch_resolution[1],
                    self.embed_dims)
 
@@ -891,7 +894,7 @@ class ViTSAM(BaseModule):
 
             if i in self.global_attn_indexes:
                x_reshape = x.permute(0, 3, 1, 2)
-               outs.append(x_reshape)
+               outs.append(x_reshape)    #这一步在decoder输入加入了B，1280,size/16,size/16,的输入
 
             if i in self.out_indices:
                 # (B, H, W, C) -> (B, C, H, W)
