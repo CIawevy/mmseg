@@ -11,6 +11,7 @@ model = dict(
     backbone=dict(
         arch='huge',
         init_cfg=dict(type='Pretrained',checkpoint=checkpoint),
+        # out_indices=[0,7,15,23,31],
         frozen_stages=32,# froze when adapting
     ),
     decode_head=dict(num_classes=2,
@@ -19,7 +20,7 @@ model = dict(
                      ))
 
 default_hooks = dict(
-    checkpoint=dict(interval=8000,max_keep_ckpts=5),
+    checkpoint=dict(interval=16000,max_keep_ckpts=12),
 )
 
 train_cfg = dict(

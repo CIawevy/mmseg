@@ -24,7 +24,7 @@ train_pipeline = [
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     # dict(type='Resize', scale=crop_size),
-    dict(type='SelfRandomResize', ratio_range=(1.5, 2)),
+    # dict(type='SelfRandomResize', ratio_range=(1.5, 2)),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
     dict(type='LoadAnnotations', binary=True),
@@ -188,6 +188,7 @@ CASIAv1_plus_all_test_dataset=dict(
     datasets=[CASIAv1_plus_authentic_test_dataset,CASIAv1_plus_tamp_test_dataset])
 
 
+
 #Columbia
 
 
@@ -295,8 +296,11 @@ test_dataloader = dict(
         type='ConcatDataset',
         datasets=[
             # OpenForensics_all_test_dataset,
-            CASIAv1_plus_all_test_dataset,
+            # CASIAv1_plus_all_test_dataset,
+            # COVERAGE_all_test_dataset
+            Columbia_all_test_dataset,
             ])
+
 
 )
 

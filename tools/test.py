@@ -12,14 +12,15 @@ from mmengine.runner import Runner
 #default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py"
 #checkpoint
 #default="/home/ipad_ind/hszhu/work-dir/segformer/iter_160000.pth"
+# default="/home/ipad_ind/hszhu/work-dir/NopSAM/nop/iter_160000.pth"
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMSeg test (and eval) a model')
     parser.add_argument('--config',default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py",
                         help='train config file path')
-    parser.add_argument('--checkpoint',default="/home/ipad_ind/hszhu/work-dir/segformer/iter_160000.pth"
-                        ,help='checkpoint file')
+    parser.add_argument('--checkpoint',default="/home/ipad_ind/hszhu/work-dir/NopSAM/nop/iter_160000.pth",
+                        help='checkpoint file')
     parser.add_argument(
         '--work-dir',
         default="/home/ipad_ind/hszhu/test-dir/debug/",
