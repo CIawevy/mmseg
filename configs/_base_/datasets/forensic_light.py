@@ -8,7 +8,7 @@ crop_size = (1024, 1024)
 
 test_pipeline = [
     dict(type='LoadImageFromFile'),
-    # dict(type='Resize', scale=crop_size),
+    dict(type='Resize', scale=crop_size),
     # add loading annotation after ``Resize`` because ground truth
     # does not need to do resize data transform
     dict(type='LoadAnnotations', binary=True),
@@ -71,6 +71,7 @@ Columbia_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
+    indices=5,
     pipeline=test_pipeline)
 
 Columbia_all_test_dataset=dict(
@@ -110,7 +111,7 @@ NIST16_tamp_test_dataset=dict(
     data_prefix=dict(
         img_path="image",
         seg_map_path="GT"),
-    indices=2,
+    indices=1,
     pipeline=test_pipeline)
 
 #OpenForensics
@@ -159,9 +160,9 @@ test_dataloader = dict(
             # OpenForensics_tamp_test_dataset,
             # Columbia_tamp_test_dataset
             # CASIAv1_plus_tamp_test_dataset,
-            # COVERAGE_tamp_test_dataset
+            COVERAGE_tamp_test_dataset
             # NIST16_tamp_test_dataset,
-            tampIC13_tamp_test_dataset
+            # tampIC13_tamp_test_dataset
         ])
 
 )
