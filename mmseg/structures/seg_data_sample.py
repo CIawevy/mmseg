@@ -90,3 +90,41 @@ class SegDataSample(BaseDataElement):
     @seg_logits.deleter
     def seg_logits(self) -> None:
         del self._seg_logits
+
+
+
+    @property
+    def confidence(self) -> BaseDataElement:
+        return self._confidence
+
+    @confidence.setter
+    def confidence(self, value: BaseDataElement) -> None:
+        self.set_field(value, '_confidence', dtype=PixelData)
+
+    @confidence.deleter
+    def confidence(self) -> None:
+        del self._confidence
+
+    @property
+    def noiseprint(self) -> PixelData:
+        return self._noiseprint
+
+    @noiseprint.setter
+    def noiseprint(self, value: PixelData) -> None:
+        self.set_field(value, '_noiseprint', dtype=PixelData)
+
+    @noiseprint.deleter
+    def noiseprint(self) -> None:
+        del self._noiseprint
+
+    @property
+    def scores(self) -> BaseDataElement:
+        return self._scores
+
+    @scores.setter
+    def scores(self, value: BaseDataElement) -> None:
+        self.set_field(value, '_scores', dtype=BaseDataElement)
+
+    @scores.deleter
+    def scores(self) -> None:
+        del self._scores
