@@ -12,6 +12,7 @@ from skimage import io
 from PIL import ImageFile
 
 
+
 class data_assistant:
     def __init__(self,
                  srcpath: str = None,
@@ -106,7 +107,8 @@ class data_assistant:
 
     @classmethod
     def converter(cls, srcfile: str = None, depth: int = 1, datalist: list = None, dstpath: str = None, to_jpg=False,
-                  to_png=False, is_groundtruth: bool = False, process_rules: Callable = None) -> None:
+                  to_png=False, is_groundtruth: bool = False,
+                  quick_gt_name:list=None,process_rules: Callable = None) -> None:
         """
         数据转换模块，流程：输入datalist，按照list查找数据，自定义数据转换，保存
         示例：
@@ -117,6 +119,7 @@ class data_assistant:
             to_png: 转换模式.xxx to .png
             channel_compress: 开启to_png时,是否将mask压缩到8位深度的单通道GT
             mask_process_rules: 自定义转换函数 输入ndarray 输出ndarray 因为cv2的read自动转换为ndarray
+            quick_gt_name:list=None: 传入image list 自动通过image的编号+gt
 
         """
         if srcfile is not None:
@@ -142,8 +145,10 @@ class data_assistant:
             print("———————————————————png转换开始——————————————————")
             if is_groundtruth:
                 print("***********检测到groundtruth将加载自定义mask转换以及通道压缩***********")
-            for srcfile in tqdm(datalist):
+            for index,srcfile in tqdm(enumerate(datalist),total=len(datalist)):
                 im_name = da.get_filename(srcfile)
+                if quick_gt_name is not None:
+                    im_name=da.get_filename(quick_gt_name[index])
                 if is_groundtruth:
                     im = cv2.imread(srcfile, flags=0)  # Gray
                 else:
@@ -361,7 +366,7 @@ da = data_assistant()
 
 
 def nist_process(msk: np.ndarray = None) -> np.ndarray:
-    msk[msk == 0] = 200
+    msk[msk != 255] = 200
     msk[msk == 255] = 0
     msk[msk == 200] = 255
     return msk
@@ -373,9 +378,13 @@ def Columbia_process(image: np.ndarray = None) -> np.ndarray:
     msk[msk > 0] = 255
     return msk
 
+def authentic_mask_generate_rules(image:np.ndarray = None) -> np.ndarray:
+    msk = image[:,:]
+    msk[msk!=0]=0
+    return msk
+
 
 # 以下是写代码过程中使用函数时顺便留下的8个Demo 帮助使用者理解。
-
 """
 
 #Demo1 check the suffix tif jpg and channels in caisa dataset and can get special suffix text_list
@@ -386,7 +395,7 @@ print(datalist)
 info=da.get_info(datalist=datalist,channel=True,suffix=True,channel_list=False,suffix_list=True)
 print(info['suffix']['tif'])
 
-#Demo2 check the 3files groundtruth of nist
+#Demo2 check the 3files gt_image of nist
 da=data_assistant()
 src="/data/Forgery/test/NIST16/3_types_image/"
 info=da.get_info(srcfile=src,depth=2,channel=True,suffix=True,channel_list=False,suffix_list=False)
@@ -395,7 +404,7 @@ print(info['suffix'])
 print(info['channel'])
 
 
-#Demo3 process nist reverse groundtruth
+#Demo3 process nist reverse gt_image
 da=data_assistant()
 src='/data/hszhu/dataset/Mydataset/NIST16/mask/'
 dstpath='/data/hszhu/dataset/Mydataset/NIST16/mask/GT/'
@@ -407,7 +416,7 @@ for k in info.keys():
     print(info[k])
 
 
-#demo4 process the Columbia groundtruth 注：这个数据集tpGT里有一张图是损坏的确实信息，会造成分辨率不同的问题，直接跳过处理
+#demo4 process the Columbia gt_image 注：这个数据集tpGT里有一张图是损坏的确实信息，会造成分辨率不同的问题，直接跳过处理
 #流程提取特定的图片 获得datalist
 #依据datalist进行处理
 da=data_assistant()
@@ -504,3 +513,358 @@ def  rename_rules(filename):
 # for k in info.keys():
 #     print(info[k])
 # print("success")
+# da=data_assistant()
+
+def glide_image_rename(filename):
+    filename2=filename[25:-3]
+    return filename2
+def glide_mask_name(filename):
+    for j in range(len(filename)):
+        if filename[j]=='_':
+            return filename[j+1:-5]
+
+# # da.rename(srcfile=fake_src,dstpath="/data/ipad/Forgery/test/CocoGlide/TP/IMAGE/",rename_rules=glide_image_rename,repeate_name_dst="/data/ipad/Forgery/test/CocoGlide/TP/repe/")
+# # da.rename(srcfile="/data/ipad/Forgery/test/CocoGlide/TP/mask/",dstpath="/data/ipad/Forgery/test/CocoGlide/TP/GT/",rename_rules=glide_mask_name,repeate_name_dst="/data/ipad/Forgery/test/CocoGlide/TP/repeate/")
+# da.ready_for_train(image_path="/data/ipad/Forgery/test/CocoGlide/TP/image/",annotation_path="/data/ipad/Forgery/test/CocoGlide/TP/GT/",)
+
+# 利用Nist原始数据根据txt读取AU GT
+da=data_assistant()
+prefix1="/data/ipad/Forgery/test/OpenForensics_Dev_part/TP/image/"
+prefix2="/data/ipad/Forgery/test/OpenForensics_Dev_part/TP/GT/"
+# prefix3="/data/ipad/Forgery/test/Nist16_subset_160/TP/GT/"
+# 打开文件
+file_path ="/data/ipad/Forgery/test/OpenForensics_Dev_part/TP/OpenForensics_fake.txt"
+with open(file_path, 'r') as file:
+    # 读取文件内容到一个字符串列表
+    lines = file.readlines()
+
+# 创建不同的列表来存储内容
+tplist = []
+gtlist = []
+aulist=[]
+tp_error_list=[
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/image/04612c2c50.jpg',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/image/ed5bd4a795.jpg',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/image/a19629a8fe.jpg',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/image/3034c43716.jpg',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/image/961b538565.jpg',
+]
+
+gt_error_list=[
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/GT/04612c2c50.png',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/GT/ed5bd4a795.png',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/GT/a19629a8fe.png',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/GT/3034c43716.png',
+    '/data/ipad/Forgery/test/OpenForensics_Dev_part/AU/GT/961b538565.png'
+]
+# da.ready_for_train(image_path='/data/ipad/Forgery/test/OpenForensics_test/TP/image/',
+#                    annotation_path='/data/ipad/Forgery/test/OpenForensics_test/TP/GT/')
+# # rmlist=[]
+# # 根据需要将内容分配到不同的列表中
+# for line in lines:
+#     # 这里假设每一行包含两个值，用空格分隔
+#     parts = line.strip().split(',')
+#     if len(parts) == 2:
+#         value1, value2 = parts
+#         tpimage=osp.join(prefix1,da.get_filename(value1))+"."+da.get_suffix(value1)
+#         groundtruth=osp.join(prefix2,da.get_filename(value2))+"."+da.get_suffix(value2)
+#         if tpimage not in tp_error_list:
+#             tplist.append(tpimage)
+#         if groundtruth not in gt_error_list:
+#             gtlist.append(groundtruth)
+#         # rmlist.append(osp.join(prefix3,value2))
+#     else:
+#         value=parts[0]
+#         aulist.append(osp.join(prefix1,value))
+
+
+# 打印结果
+# print("List 1:", tplist[0])
+# print("List 2:", gtlist[1])
+
+# tp save
+# print(len(tplist))
+
+
+# da.remove_data(rmlist)
+# da.converter(datalist=tp_error_list,dstpath="/data/ipad/Forgery/test/OpenForensics_test/TP/image/",to_jpg=True,)
+# da.converter(datalist=gt_error_list,dstpath="/data/ipad/Forgery/test/OpenForensics_test/TP/GT/",to_png=True,is_groundtruth=True)
+#
+# _,err=da.ready_for_train(image_path="/data/ipad/Forgery/test/DSO-1/TP/image",
+#                    annotation_path="/data/ipad/Forgery/test/DSO-1/TP/GT",
+#                    img_suffix="jpg",ano_suffix='png')
+
+
+
+# da=data_assistant()
+# prefix="/data/ipad/Forgery/test/NIST4share/"
+# # 打开文件
+# file_path ="/data/ipad/Forgery/test/NIST4share/NIST16_real.txt"
+# with open(file_path, 'r') as file:
+#     # 读取文件内容到一个字符串列表
+#     lines = file.readlines()
+#
+# # 创建不同的列表来存储内容
+# reallist = []
+#
+# # 根据需要将内容分配到不同的列表中
+# for line in lines:
+#     part=line.strip()
+#     # 这里假设每一行包含两个值，用空格分隔
+#     reallist.append(osp.join(prefix,part))
+# # print(reallist[0])
+# da.converter(datalist=reallist,dstpath="/data/ipad/Forgery/test/Nist16_subset_160/AU/image/",to_jpg=True)
+# da.converter(datalist=reallist,dstpath="/data/ipad/Forgery/test/Nist16_subset_160/AU/GT/",to_png=True,is_groundtruth=True,
+#              process_rules=authentic_mask_generate_rules)
+da=data_assistant()
+def rename_cover0(name):
+    return name[:-1]
+def rename_cover1(name):
+    return name[:-6]
+import cv2
+import numpy as np
+
+# prefix_gt = '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/'
+# # 创建一个空列表来存储调整大小后的groundtruth图像
+# error_gt=['/data/ipad/Forgery/pristine/COVERAGE/TP/GT/56.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/58.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/57.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/59.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/48.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/55.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/95.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/61.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/41.tif']
+# # error = [x.replace('GT','image') for x in gt]
+# true_gt_path = "/data/ipad/Forgery/test/COVERAGE/TP/GT/"
+# for gt in error_gt:
+#     name = osp.basename(gt).replace('.tif','.png')
+#     path = osp.join(true_gt_path,name)
+#     gt_i = cv2.imread(path)
+#     save_path = osp.join(prefix_gt,name.replace('.png','.tif'))
+#     print(save_path)
+#     cv2.imwrite(filename=save_path,img=gt_i)
+#
+# image_paths = error
+# groundtruth_paths = gt
+# prefix="/data/ipad/Forgery/pristine/COVERAGE/pro"
+# # 遍历图像和groundtruth路径
+# for image_path, groundtruth_path in zip(sorted(image_paths), sorted(groundtruth_paths)):
+#     # 读取图像和groundtruth
+#     name=da.get_filename(image_path)
+#     image = cv2.imread(image_path,flags=1)
+#     gt_image = cv2.imread(groundtruth_path)
+#
+#     # 确保图像和groundtruth具有相同的大小
+#     # if image.shape[:2] != gt_image.shape[:2]:
+#     #     # 将groundtruth调整为与图像相同的大小
+#     #     gt_image = cv2.resize(gt_image, (image.shape[1], image.shape[0]))
+#     # 获取图像和groundtruth的尺寸
+#     image_height, image_width, _ = image.shape
+#     gt_height, gt_width, _ = gt_image.shape
+#
+#     crop_height = min(image_height, gt_height)
+#     crop_width = min(image_width, gt_width)
+#     # print(gt_width - crop_width)
+#     top_left = gt_image[:crop_height, :crop_width]
+#     top_right = gt_image[:crop_height, gt_width - crop_width:]
+#     bottom_left = gt_image[gt_height - crop_height:, :crop_width]
+#     bottom_right = gt_image[gt_height - crop_height:, gt_width - crop_width:]
+#
+#
+#
+#     #
+#     # # 将图像和groundtruth叠加在一起
+#     # cv2.imwrite(osp.join(prefix, name) +   '.png', gt_image)
+#     # # stacked_image = np.hstack((image, gt_image))
+#     # result = cv2.addWeighted(image, 1, gt_image, 1, 0)
+#     # # cv2.imwrite(osp.join(prefix, name) +   'stack.png', stacked_image)
+#     # cv2.imwrite(osp.join(prefix, name) +  'result.png', result)
+#
+#     for index,mask in enumerate([top_left,top_right,bottom_right,bottom_left]):
+#         # 将图像和groundtruth叠加在一起
+#         cv2.imwrite(osp.join(prefix,name)+f'({str(index)})'+'.tif',mask)
+#         stacked_image = np.hstack((image, mask))
+#         result = cv2.addWeighted(image, 1, mask, 1, 0)
+#         # cv2.imwrite(osp.join(prefix,name)+f'({str(index)})'+'stack.png',stacked_image)
+#         cv2.imwrite(osp.join(prefix, name) +f'({str(index)})'+ 'result.tif', result)
+
+
+
+
+
+# da=data_assistant()
+
+# da.converter(srcfile="/data/ipad/Forgery/dd/image/",dstpath="/data/ipad/Forgery/dd/GT/",
+#              to_png=True,is_groundtruth=True,process_rules=authentic_mask_generate_rules)
+
+
+"""
+图像gt压缩表示--不丢失空间一般性
+"""
+#比较不同方式resize的GT图对比
+#avg pool
+
+
+
+
+
+#resize blinear
+#
+# import cv2
+# import numpy as np
+# prefix="/data/ipad/Forgery/test/NIST16/exp/downsam/"
+# # 读取原始图像 #256/16=16
+# image_path = "/data/ipad/Forgery/test/NIST16/GT/NC2016_0048.png"# 替换为你的真实图像路径
+# # original_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+# original_image = cv2.imread(image_path)
+# original_image = cv2.resize(original_image, (512, 512))
+#
+#
+# # 定义patch大小
+# patch_size = 16
+#
+# # 复制原始图像以便在上面绘制边界框
+# image_with_patches = original_image.copy()
+#
+# # 循环遍历图像并绘制边界框
+# for y in range(0, original_image.shape[0], patch_size):
+#     for x in range(0, original_image.shape[1], patch_size):
+#         cv2.rectangle(image_with_patches, (x, y), (x + patch_size, y + patch_size), (0, 255, 0), 2)  # 在每个patch上绘制绿色边界框
+# cv2.imwrite(osp.join(prefix,'gt_withpatch.png'), image_with_patches)
+#
+#
+#
+#
+#
+#
+#
+# original_image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+# original_image = cv2.resize(original_image, (512, 512))
+# # # 使用双线性插值下采样（16倍）
+# downsampled_bilinear = cv2.resize(original_image, (original_image.shape[1] // 16, original_image.shape[0] // 16), interpolation=cv2.INTER_LINEAR)
+#
+# # 使用平均池化下采样（16倍）
+# kernel_size = 16
+# downsampled_average_pooling = np.zeros((original_image.shape[0] // kernel_size, original_image.shape[1] // kernel_size), dtype=np.uint8)
+#
+# for i in range(0, original_image.shape[0], kernel_size):
+#     for j in range(0, original_image.shape[1], kernel_size):
+#         block = original_image[i:i+kernel_size, j:j+kernel_size]
+#         average_value = np.mean(block)
+#         downsampled_average_pooling[i//kernel_size, j//kernel_size] = average_value
+# #
+# # # 保存结果图像
+# cv2.imwrite(osp.join(prefix,'downsampled_bilinear.png'), downsampled_bilinear)
+# cv2.imwrite(osp.join(prefix,'downsampled_average_pooling.png'), downsampled_average_pooling)
+# #
+# # import cv2
+# # import numpy as np
+
+
+
+# # 读取原始图像
+# original_image_path= "/data/ipad/Forgery/test/NIST16/exp/downsam/NC2016_0048.png" # 替换为你的真实图像路径
+#
+# import cv2
+# import numpy as np
+#
+# original_image_path="/data/ipad/Forgery/test/NIST16/exp/resizegt/NC2016_0048.jpg"
+# original_image = cv2.imread(original_image_path)
+# original_image = cv2.resize(original_image, (512, 512))
+# cv2.imwrite("/data/ipad/Forgery/test/NIST16/exp/resizegt/image/NC2016_0048.jpg",original_image)
+# # 读取线性下采样图像
+# # linear_downsampled_path = "/data/ipad/Forgery/test/CocoGlide/TP/downsample/downsampled_bilinear.png"  # 替换为线性下采样的图像路径
+# linear_downsampled_path="/data/ipad/Forgery/test/NIST16/exp/downsam/downsampled_bilinear.png"
+# linear_downsampled = cv2.imread(linear_downsampled_path, cv2.IMREAD_GRAYSCALE)
+
+
+# # 读取平均池化下采样图像
+# # average_pooling_downsampled_path = "/data/ipad/Forgery/test/CocoGlide/TP/downsample/downsampled_average_pooling.png"  # 替换为平均池化下采样的图像路径
+# average_pooling_downsampled_path ="/data/ipad/Forgery/test/NIST16/exp/downsam/downsampled_average_pooling.png"
+# average_pooling_downsampled = cv2.imread(average_pooling_downsampled_path, cv2.IMREAD_GRAYSCALE)
+#
+# # 使用双线性插值上采样回原始尺寸
+# upsampled_linear = cv2.resize(linear_downsampled, (original_image.shape[1], original_image.shape[0]), interpolation=cv2.INTER_LINEAR)
+# upsampled_average_pooling = cv2.resize(average_pooling_downsampled, (original_image.shape[1], original_image.shape[0]), interpolation=cv2.INTER_LINEAR)
+#
+# # 计算上采样图像与原始图像之间的差异
+# difference_linear = cv2.absdiff(original_image, upsampled_linear)
+# difference_average_pooling = cv2.absdiff(original_image, upsampled_average_pooling)
+# # prefix="/data/ipad/Forgery/test/CocoGlide/TP/re_upsample/"
+# prefix="/data/ipad/Forgery/test/NIST16/exp/reup/"
+# cv2.imwrite(osp.join(prefix,'upsampled_linear.png'),upsampled_linear)
+# cv2.imwrite(osp.join(prefix,'upsampled_average_pooling.png'),upsampled_average_pooling)
+
+# print('hello')
+da=data_assistant()#COV
+image_path="/data/ipad/Forgery/pristine/COVERAGE/image/"
+mask_path="/data/ipad/Forgery/pristine/COVERAGE/mask/"
+fake_txt = "/data/ipad/Forgery/pristine/COVERAGE/coverage_fake.txt"
+au_txt = "/data/ipad/Forgery/pristine/COVERAGE/coverage_real.txt"
+data_root='/data/ipad/Forgery/pristine/COVERAGE/'
+prefix = '/data/ipad/Forgery/pristine/COVERAGE/AU/'
+
+
+# with open(fake_txt, 'r') as file:
+#     # 读取文件内容到一个字符串列表
+#     lines = file.readlines()
+# for line in lines:
+#     # 这里假设每一行包含两个值，用空格分隔
+#     parts = line.strip().split(',')
+#     if len(parts) == 2:
+#         value1, value2 = parts
+#         image_path = osp.join(data_root,value1)
+#         gt_path = osp.join(data_root,value2)
+#         # print(image_path)
+#         # print(gt_path)
+#         # break
+#         i_dst = osp.join(prefix,'image',osp.basename(image_path).replace('t.','.'))
+#         g_dst = osp.join(prefix,'GT',osp.basename(gt_path).replace('forged.','.'))
+#         # print(g_dst)
+#         # # break
+#         shutil.copyfile(image_path,i_dst)
+#         shutil.copyfile(gt_path,g_dst)
+
+# with open(au_txt, 'r') as file:
+#     # 读取文件内容到一个字符串列表
+#     lines = file.readlines()
+# for line in lines:
+#     # 这里假设每一行包含两个值，用空格分隔
+#     parts = line.strip().split(',')
+#     if len(parts) == 1:
+#         value1 = parts[0]
+#         # print(value1)
+#         image_path = osp.join(data_root,value1)
+#         # print(image_path)
+#         # print(gt_path)
+#         # break
+#         i_dst = osp.join(prefix,'image',osp.basename(image_path).replace('t.','.'))
+#
+#         print(i_dst)
+#         # break
+#         shutil.copyfile(image_path,i_dst)
+# data = da.get_data("/data/ipad/Forgery/pristine/COVERAGE/AU/image/")
+# da.converter(datalist=data,dstpath="/data/ipad/Forgery/pristine/COVERAGE/AU/GT/",
+#              to_png=True,is_groundtruth=True,process_rules=authentic_mask_generate_rules)
+
+#COV有9张gt image 尺寸不匹配的，要纠错或者剔除
+# _,error_list=da.ready_for_train(image_path="/data/ipad/Forgery/pristine/COVERAGE/TP/image/",
+#                    annotation_path="/data/ipad/Forgery/pristine/COVERAGE/TP/GT/",
+#                    img_suffix='tif',ano_suffix='tif',return_error_list=True)
+# print(error_list)
+# error=['/data/ipad/Forgery/pristine/COVERAGE/TP/GT/56.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/58.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/57.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/59.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/48.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/55.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/95.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/61.tif',
+#        '/data/ipad/Forgery/pristine/COVERAGE/TP/GT/41.tif']
+#
+# _,error = da.ready_for_train(image_path="/data/ipad/Forgery/pristine/COVERAGE/TP/image/",
+#                    annotation_path="/data/ipad/Forgery/pristine/COVERAGE/TP/GT/",
+#                    img_suffix='tif',
+#                    ano_suffix='tif',
+#                    return_error_list=True)
