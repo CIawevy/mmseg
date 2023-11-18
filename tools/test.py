@@ -2,7 +2,7 @@
 import argparse
 import os
 import os.path as osp
-# os.environ['CUDA_VISIBLE_DEVICES']='0'
+# os.environ['CUDA_VISIBLE_DEVICES']='1'
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
 
@@ -13,13 +13,15 @@ from mmengine.runner import Runner
 #checkpoint
 #default="/home/ipad_ind/hszhu/work-dir/segformer/iter_160000.pth"
 # default="/home/ipad_ind/hszhu/work-dir/NopSAM/nop/iter_160000.pth"
+# default= "/home/ipad_ind/hszhu/work-dir/NopSAM/nop/nop/iter_160000.pth"
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description='MMSeg test (and eval) a model')
-    parser.add_argument('--config',default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py",
+    parser.add_argument('--config',default= "/home/ipad_ind/hszhu/mmseg/configs/trufor/myTrufor.py",
                         help='train config file path')
-    parser.add_argument('--checkpoint',default="/home/ipad_ind/hszhu/work-dir/NopSAM/nop/iter_160000.pth",
+    parser.add_argument('--checkpoint',
+                        default= "/data/ipad/Forgery/hszhu/work-dir/trufor/stage1/iter_16000.pth",
                         help='checkpoint file')
     parser.add_argument(
         '--work-dir',
@@ -28,7 +30,7 @@ def parse_args():
               'into the directory as json'))
     parser.add_argument(
         '--out',
-        # default="/data/hszhu/predict/",
+        # default="/data/ipad/Forgery/hszhu/out/columbia/test/" 可以不开 我在config 传参了
         type=str,
         help='The directory to save output prediction for offline evaluation')
     parser.add_argument(
