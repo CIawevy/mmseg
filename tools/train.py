@@ -3,7 +3,7 @@ import argparse
 import logging
 import os
 import os.path as osp
-os.environ['CUDA_VISIBLE_DEVICES']='1' #注意仅调试使用，训练时把这一行注释掉
+# os.environ['CUDA_VISIBLE_DEVICES']='1' #注意仅调试使用，训练时把这一行注释掉
 from mmengine.config import Config, DictAction
 from mmengine.logging import print_log
 from mmengine.runner import Runner
@@ -11,9 +11,11 @@ from mmengine.runner import Runner
 from mmseg.registry import RUNNERS
 
 # default="/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py"
+# default="/home/ipad_ind/hszhu/work-dir/debug/"
+# https://blog.csdn.net/qq_45717425/article/details/128558684 loss 多卡问题
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
-    parser.add_argument('--config',default= "/home/ipad_ind/hszhu/mmseg/configs/sam/Tamp_Sam_huge.py",
+    parser.add_argument('config',default= "/home/ipad_ind/hszhu/mmseg/configs/trufor/myTrufor.py",
                         help='train config file path')
     parser.add_argument('--work-dir',default="/home/ipad_ind/hszhu/work-dir/debug/",
                         help='the dir to save logs and models')
