@@ -14,10 +14,10 @@ from os import path  as osp
 da = data_assistant()
 # config = "/data/hszhu/code/mmseg_project/configs/sam/Tamp_Sam_base.py"
 # checkpoint = "/data/hszhu/code/mmseg_project/pretrained/vit-base-p16_SAM-pre_3rdparty_sa1b-1024px_20230411-2320f9cc.pth"
-save_prefix="/data/ipad/Forgery/test/Tampered-IC13/Heat2"
+save_prefix="/home/ipad_ind/hszhu/test-dir/OUT/feature/cover_base"
 if not osp.exists(save_prefix):
     os.mkdir(save_prefix)
-img_iter=iter(sorted(da.get_data(srcpath="/data/ipad/Forgery/test/Tampered-IC13/test_img/",depth=1)))
+img_iter=iter(sorted(da.get_data(srcpath="/data/ipad/Forgery/test/COVERAGE/TP/image/",depth=1)))
 tmp=""
 # layer_num=12 #SAM base
 # layer_num=24 # SAM large
