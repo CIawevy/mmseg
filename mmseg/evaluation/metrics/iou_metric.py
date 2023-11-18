@@ -90,7 +90,7 @@ class IoUMetric(BaseMetric):
                     data_sample['img_path']))[0]
                 png_filename = osp.abspath(
                     osp.join(self.output_dir, f'{basename}.png'))
-                output_mask = pred_label.cpu().numpy()
+                output_mask = pred_label.cpu().numpy()*255
                 # The index range of official ADE20k dataset is from 0 to 150.
                 # But the index range of output is from 0 to 149.
                 # That is because we set reduce_zero_label=True.
@@ -118,7 +118,7 @@ class IoUMetric(BaseMetric):
         # convert list of tuples to tuple of lists, e.g.
         # [(A_1, B_1, C_1, D_1), ...,  (A_n, B_n, C_n, D_n)] to
         # ([A_1, ..., A_n], ..., [D_1, ..., D_n])
-        results = tuple(zip(*results))
+        results = tuple(zip(*results)) #原本是 n*4 变成4*n
         assert len(results) == 4
 
         total_area_intersect = sum(results[0])
@@ -128,10 +128,10 @@ class IoUMetric(BaseMetric):
         ret_metrics = self.total_area_to_metrics(
             total_area_intersect, total_area_union, total_area_pred_label,
             total_area_label, self.metrics, self.nan_to_num, self.beta)
-
+        #获得类名 tampered background
         class_names = self.dataset_meta['classes']
 
-        # summary table
+        # summary table 不同类别预测取平均，并取整
         ret_metrics_summary = OrderedDict({
             ret_metric: np.round(np.nanmean(ret_metric_value) * 100, 2)
             for ret_metric, ret_metric_value in ret_metrics.items()
@@ -144,7 +144,7 @@ class IoUMetric(BaseMetric):
                 metrics['m' + key] = val
 
         # each class table
-        ret_metrics.pop('aAcc', None)
+        ret_metrics.pop('aAcc', None) #将原本的ret_metric*100并保留两位
         ret_metrics_class = OrderedDict({
             ret_metric: np.round(ret_metric_value * 100, 2)
             for ret_metric, ret_metric_value in ret_metrics.items()
@@ -273,11 +273,11 @@ class IoUMetric(BaseMetric):
                 ret_metrics['Fscore'] = f_value
                 ret_metrics['Precision'] = precision
                 ret_metrics['Recall'] = recall
-
+        #获得指标的 OrderedDict
         ret_metrics = {
             metric: value.numpy()
             for metric, value in ret_metrics.items()
-        }
+        }#转换为numpy格式方便后续取平均
         if nan_to_num is not None:
             ret_metrics = OrderedDict({
                 metric: np.nan_to_num(metric_value, nan=nan_to_num)
