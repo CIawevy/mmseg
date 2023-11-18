@@ -10,6 +10,17 @@ import numpy as np
 from mmengine.dataset import BaseDataset, Compose
 
 from mmseg.registry import DATASETS
+import copy
+import functools
+import gc
+import logging
+import pickle
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
+
+from mmengine.logging import print_log
+
 
 
 @DATASETS.register_module()
@@ -53,7 +64,7 @@ class BaseSegDataset(BaseDataset):
         img_suffix (str): Suffix of images. Default: '.jpg'
         seg_map_suffix (str): Suffix of segmentation maps. Default: '.png'
         filter_cfg (dict, optional): Config for filter data. Defaults to None.
-        indices (int or Sequence[int], optional): Support using first few
+        Indices (int or Sequence[int], optional): Support using first few
             data in annotation file to facilitate training/testing on a smaller
             dataset. Defaults to None which means using all ``data_infos``.
         serialize_data (bool, optional): Whether to hold memory using
@@ -99,6 +110,10 @@ class BaseSegDataset(BaseDataset):
                  reduce_zero_label: bool = False,
                  global_class: int = 1,
                  is_real:bool=False,
+                 random_sample:bool=False,
+                 low: int =0,
+                 high: int=None,
+                 sample_seed: Optional=[int, None],
                  backend_args: Optional[dict] = None) -> None:
 
         self.img_suffix = img_suffix
@@ -107,6 +122,8 @@ class BaseSegDataset(BaseDataset):
         self.reduce_zero_label = reduce_zero_label
         self.global_class = global_class
         self.is_real=is_real,
+        self.random_sample=random_sample
+        self.sample_seed = sample_seed
         self.backend_args = backend_args.copy() if backend_args else None
 
         self.data_root = data_root
@@ -119,7 +136,8 @@ class BaseSegDataset(BaseDataset):
         self.max_refetch = max_refetch
         self.data_list: List[dict] = []
         self.data_bytes: np.ndarray
-
+        self.low=low
+        self.high=high
         # Set meta information.
         self._metainfo = self._load_metainfo(copy.deepcopy(metainfo))
 
@@ -150,6 +168,39 @@ class BaseSegDataset(BaseDataset):
             assert self._metainfo.get('classes') is not None, \
                 'dataset metainfo `classes` should be specified when testing'
 
+    def full_init(self):
+        """Load annotation file and set ``BaseDataset._fully_initialized`` to
+        True.
+
+        If ``lazy_init=False``, ``full_init`` will be called during the
+        instantiation and ``self._fully_initialized`` will be set to True. If
+        ``obj._fully_initialized=False``, the class method decorated by
+        ``force_full_init`` will call ``full_init`` automatically.
+
+        Several steps to initialize annotation:
+
+            - load_data_list: Load annotations from annotation file.
+            - filter data information: Filter annotations according to
+              filter_cfg.
+            - slice_data: Slice dataset according to ``self._indices``
+            - serialize_data: Serialize ``self.data_list`` if
+              ``self.serialize_data`` is True.
+        """
+        if self._fully_initialized:
+            return
+        # load data information
+        self.data_list = self.load_data_list()
+        # filter illegal data, such as data that has no annotations.
+        self.data_list = self.filter_data()
+        # Get subset data according to indices.
+        if self._indices is not None:
+            self.data_list = self._get_unserialized_subset(self._indices,self.random_sample,self.sample_seed,self.low,self.high)
+
+        # serialize data_list
+        if self.serialize_data:
+            self.data_bytes, self.data_address = self._serialize_data()
+
+        self._fully_initialized = True
     @classmethod
     def get_label_map(cls,
                       new_classes: Optional[Sequence] = None
@@ -275,5 +326,45 @@ class BaseSegDataset(BaseDataset):
                 data_list.append(data_info)
             data_list = sorted(data_list, key=lambda x: x['img_path'])
         return data_list
+
+
+
+    def _get_unserialized_subset(self, indices: Union[Sequence[int],int],
+                                 random: bool=False, seed:int=0,low:int=0,high:int= None) -> list:
+        """Get subset of data information list.
+
+        Args:
+            Indices (int or Sequence[int]): If type of Indices is int,
+                Indices represents the first or last few data of data
+                information. If type of Indices is Sequence, Indices represents
+                the target data information index which consist of subset data
+                information.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: subset of data information.
+        """
+        if random:
+            # np.random.seed(seed)
+            assert( low is not None and high is not None ) , "config error maybe high is not given"
+            Indices = list(np.random.randint(low,high,indices))
+        else:
+            Indices = indices
+        if isinstance(Indices, int):
+            if Indices >= 0:
+                # Return the first few data information.
+                sub_data_list = self.data_list[:Indices]
+            else:
+                # Return the last few data information.
+                sub_data_list = self.data_list[Indices:]
+        elif isinstance(Indices, Sequence):
+            # Return the data information according to given Indices.
+            sub_data_list = []
+            for idx in Indices:
+                sub_data_list.append(self.data_list[idx])
+        else:
+            raise TypeError('Indices should be a int or sequence of int, '
+                            f'but got {type(Indices)}')
+        return sub_data_list
+
 
 
