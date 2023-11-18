@@ -26,7 +26,10 @@ from .vit import VisionTransformer
 from .DnCNN import make_net
 from .full_sam import SAM
 from .visSAM import VisSAM
-from .sam import ViTSAM
+from .sam_v3 import ViTSAMv3
+from .sam_v35 import ViTSAMv35
+from .sam_v4 import ViTSAMv4
+from .dual_segformer import RGBXTransformer
 
 __all__ = [
     'ResNet', 'ResNetV1c', 'ResNetV1d', 'ResNeXt', 'HRNet', 'FastSCNN',
@@ -34,5 +37,5 @@ __all__ = [
     'VisionTransformer', 'SwinTransformer', 'MixVisionTransformer',
     'BiSeNetV1', 'BiSeNetV2', 'ICNet', 'TIMMBackbone', 'ERFNet', 'PCPVT',
     'SVT', 'STDCNet', 'STDCContextPathNet', 'BEiT', 'MAE', 'PIDNet', 'MSCAN',
-    'ViTSAM','make_net','SAM','VisSAM'
+    'ViTSAMv3','make_net','SAM','VisSAM','ViTSAMv35','ViTSAMv4','RGBXTransformer',
 ]

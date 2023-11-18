@@ -3,7 +3,9 @@ from .base import BaseSegmentor
 from .cascade_encoder_decoder import CascadeEncoderDecoder
 from .encoder_decoder import EncoderDecoder
 from .seg_tta import SegTTAModel
+from .Trufor_encoder_decoder import MyEncoderDecoder
+
 
 __all__ = [
-    'BaseSegmentor', 'EncoderDecoder', 'CascadeEncoderDecoder', 'SegTTAModel'
+    'BaseSegmentor', 'EncoderDecoder', 'CascadeEncoderDecoder', 'SegTTAModel','MyEncoderDecoder'
 ]
