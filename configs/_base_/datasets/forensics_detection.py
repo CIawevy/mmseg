@@ -39,7 +39,7 @@ CASIAv2_tamp_train_dataset = dict(
         data_root=data_root,
         global_class=1,
         data_prefix=dict(
-            img_path='train/CASIA 2.0/TP/image', seg_map_path='train/CASIA 2.0/TP/GT/'),
+            img_path='train/CASIAv2/TP/image', seg_map_path='train/CASIAv2/TP/GT/'),
         pipeline=train_pipeline
     )
 )
@@ -51,7 +51,7 @@ CASIAv2_authentic_train_dataset = dict(
         data_root=data_root,
         global_class=0,
         data_prefix=dict(
-            img_path='train/CASIA 2.0/AU/image', seg_map_path='train/CASIA 2.0/AU/GT/'),
+            img_path='train/CASIAv2/AU/image', seg_map_path='train/CASIAv2/AU/GT/'),
         pipeline=train_pipeline
     )
 )

@@ -15,7 +15,8 @@ from mmseg.registry import RUNNERS
 # https://blog.csdn.net/qq_45717425/article/details/128558684 loss 多卡问题
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a segmentor')
-    parser.add_argument('config',default= "/home/ipad_ind/hszhu/mmseg/configs/trufor/myTrufor.py",
+    parser.add_argument('--config',
+                        default= "/home/ipad_ind/hszhu/mmseg/configs/hrvit/Tamp_hrvit_b1.py",
                         help='train config file path')
     parser.add_argument('--work-dir',default="/home/ipad_ind/hszhu/work-dir/debug/",
                         help='the dir to save logs and models')

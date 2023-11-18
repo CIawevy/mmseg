@@ -23,12 +23,14 @@ except ImportError:
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Get the FLOPs of a segmentor')
-    parser.add_argument('config', help='train config file path')
+    parser.add_argument('--config',
+                        default="/home/ipad_ind/hszhu/mmseg/configs/hrvit/Tamp_hrvit_b1.py",
+                        help='train config file path')
     parser.add_argument(
         '--shape',
         type=int,
         nargs='+',
-        default=[2048, 1024],
+        default=[512,512],
         help='input image size')
     parser.add_argument(
         '--cfg-options',

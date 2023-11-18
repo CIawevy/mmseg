@@ -21,7 +21,7 @@ def parse_args():
     parser.add_argument('--config',default= "/home/ipad_ind/hszhu/mmseg/configs/trufor/myTrufor.py",
                         help='train config file path')
     parser.add_argument('--checkpoint',
-                        default= "/data/ipad/Forgery/hszhu/work-dir/trufor/stage1/iter_16000.pth",
+                        # default= "/data/ipad/Forgery/hszhu/work-dir/trufor/stage1/iter_16000.pth",
                         help='checkpoint file')
     parser.add_argument(
         '--work-dir',

@@ -30,6 +30,7 @@ from .sam_v3 import ViTSAMv3
 from .sam_v35 import ViTSAMv35
 from .sam_v4 import ViTSAMv4
 from .dual_segformer import RGBXTransformer
+from .hrvit import hrvit_b1, hrvit_b2, hrvit_b3
 
 __all__ = [
     'ResNet', 'ResNetV1c', 'ResNetV1d', 'ResNeXt', 'HRNet', 'FastSCNN',
@@ -38,4 +39,5 @@ __all__ = [
     'BiSeNetV1', 'BiSeNetV2', 'ICNet', 'TIMMBackbone', 'ERFNet', 'PCPVT',
     'SVT', 'STDCNet', 'STDCContextPathNet', 'BEiT', 'MAE', 'PIDNet', 'MSCAN',
     'ViTSAMv3','make_net','SAM','VisSAM','ViTSAMv35','ViTSAMv4','RGBXTransformer',
+    'hrvit_b1', 'hrvit_b2', 'hrvit_b3',
 ]
