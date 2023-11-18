@@ -44,7 +44,7 @@ class PackSegInputs(BaseTransform):
     def __init__(self,
                  meta_keys=('img_path', 'seg_map_path', 'ori_shape',
                             'img_shape', 'pad_shape', 'scale_factor', 'flip',
-                            'flip_direction', 'reduce_zero_label')):
+                            'flip_direction', 'reduce_zero_label','global_class')):
         self.meta_keys = meta_keys
 
     def transform(self, results: dict) -> dict:
@@ -71,7 +71,8 @@ class PackSegInputs(BaseTransform):
                 img = img.transpose(2, 0, 1)
                 img = to_tensor(img).contiguous()
             packed_results['inputs'] = img
-
+        if 'global_class' in results:
+            packed_results['global_class'] =  results['global_class']
         data_sample = SegDataSample()
         if 'gt_seg_map' in results:
             if len(results['gt_seg_map'].shape) == 2:
@@ -98,6 +99,7 @@ class PackSegInputs(BaseTransform):
                 img_meta[key] = results[key]
         data_sample.set_metainfo(img_meta)
         packed_results['data_samples'] = data_sample
+
 
         return packed_results
 
