@@ -16,6 +16,7 @@ class ForensicsDataset(BaseSegDataset):
     METAINFO = dict(
         classes=('original', 'tampered'),
         palette=[0, 255],
+
     )
 
     def __init__(self,
