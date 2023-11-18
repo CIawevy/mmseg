@@ -48,7 +48,6 @@ def cross_entropy(pred,
         weight=class_weight,
         reduction='none',
         ignore_index=ignore_index)
-
     # apply weights and do the reduction
     # average loss over non-ignored elements
     # pytorch's official cross_entropy average loss over non-ignored elements
