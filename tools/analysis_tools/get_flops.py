@@ -86,13 +86,15 @@ def inference(args: argparse.Namespace, logger: MMLogger) -> dict:
                                   'supported yet.')
     outputs = get_model_complexity_info(
         model,
-        input_shape,
         inputs=data['inputs'],
-        show_table=False,
-        show_arch=False)
+        show_table=True,
+        show_arch=True)
     result['flops'] = _format_size(outputs['flops'])
     result['params'] = _format_size(outputs['params'])
+    result['out_table'] = outputs['out_table']
+    result['out_arch']=  outputs['out_arch']
     result['compute_type'] = 'direct: randomly generate a picture'
+
     return result
 
 
@@ -115,6 +117,8 @@ def main():
     print(f'{split_line}\nCompute type: {compute_type}\n'
           f'Input shape: {pad_shape}\nFlops: {flops}\n'
           f'Params: {params}\n{split_line}')
+    print(result['out_table'])
+    # print(result['out_arch'])
     print('!!!Please be cautious if you use the results in papers. '
           'You may need to check if all ops are supported and verify '
           'that the flops computation is correct.')
