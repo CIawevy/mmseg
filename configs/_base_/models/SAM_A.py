@@ -13,7 +13,7 @@ model = dict(
     type='EncoderDecoder',
     data_preprocessor=data_preprocessor,
     backbone=dict(
-        type='ViTSAM',
+        type='ViTSAMv3',
         arch='base',
         img_size=1024,
         patch_size=16,
@@ -34,8 +34,8 @@ model = dict(
         norm_cfg=norm_cfg,
         align_corners=False,
         loss_decode=[
-            dict(type='CrossEntropyLoss', loss_name='loss_ce', loss_weight=4.0),
-            dict(type='DiceLoss', loss_name='loss_dice', loss_weight=1.0)
+            dict(type='CrossEntropyLoss', loss_name='loss_ce', loss_weight=3.0),
+            dict(type='DiceLoss', loss_name='loss_dice', loss_weight=7.0)
         ]),
     # model training and testing settings
     train_cfg=dict(),

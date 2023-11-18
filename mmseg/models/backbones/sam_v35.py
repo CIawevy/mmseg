@@ -250,6 +250,8 @@ class PromptGenerator(nn.Module):
 
         self.shared_mlp = nn.Linear(self.embed_dim // self.scale_factor, self.embed_dim)
         self.embedding_generator = nn.Linear(self.embed_dim, self.embed_dim // self.scale_factor)
+        self.hfc_generator = nn.Linear(self.embed_dim, self.embed_dim // self.scale_factor)
+        # self.nop_generator = nn.Linear(self.embed_dim // 4, self.embed_dim // self.scale_factor)
         for i in range(self.depth):
             lightweight_mlp = nn.Sequential(
                 nn.Linear(self.embed_dim // self.scale_factor, self.embed_dim // self.scale_factor),
@@ -261,12 +263,12 @@ class PromptGenerator(nn.Module):
         #                                     patch_size=patch_size, in_chans=3,
         #                                     embed_dim=self.embed_dim // self.scale_factor)
         self.prompt_generator_HFC = PatchEmbed(    in_channels=3,
-                                               embed_dims=self.embed_dim // self.scale_factor,
+                                               embed_dims=self.embed_dim ,
                                                conv_type='Conv2d',
                                                kernel_size=patch_size,
                                                stride=patch_size, )
         self.prompt_generator_NoP = PatchEmbed(in_channels=1,
-                                               embed_dims=self.embed_dim // self.scale_factor,
+                                               embed_dims=self.embed_dim // 4 ,
                                                conv_type='Conv2d',
                                                kernel_size=patch_size,
                                                stride=patch_size, )
@@ -296,26 +298,35 @@ class PromptGenerator(nn.Module):
     def init_handcrafted(self, x):
         x = self.fft(x, self.freq_nums)
         x,_=self.prompt_generator_HFC(x)
+        x=self.hfc_generator(x)
         return x
 
     def NoP(self, x):
-        return self.prompt_generator_NoP(x)
+        x,_=self.prompt_generator_NoP(x)
+        # x=self.nop_generator(x)
+        return x
 
-    def get_prompt(self, embedding_feature,handcrafted_feature:Optional=None ,other_feature:Optional=None):
-        #N, C, H, W = handcrafted_feature.shape
-        #handcrafted_feature = handcrafted_feature.view(N, C, H * W).permute(0, 2, 1)
+    def get_prompt( self, embedding_feature, embedding_weight:int=None,
+                   frequncy_feature:Optional=None , freq_weight:int=None,
+                   noise_feature:Optional=None  , noise_weight:int=None):
+        #N, C, H, W = frequncy_feature.shape
+        #frequncy_feature = frequncy_feature.view(N, C, H * W).permute(0, 2, 1)
         prompts = []
+        embedding_weight = embedding_weight if embedding_weight is not None else 1
+        freq_weight = freq_weight if freq_weight is not None else 1
+        noise_weight = noise_weight if noise_weight is not None else 1
         for i in range(self.depth):
             lightweight_mlp = getattr(self, 'lightweight_mlp_{}'.format(str(i)))
             # prompt = proj_prompt(prompt)
-            if handcrafted_feature is not None and other_feature is not None:
-                prompt = lightweight_mlp(handcrafted_feature + embedding_feature + other_feature)
-            elif handcrafted_feature is not None:
-                prompt = lightweight_mlp(handcrafted_feature + embedding_feature )
-            elif other_feature is not None:
-                prompt = lightweight_mlp(  embedding_feature + other_feature)
+            if frequncy_feature is not None and noise_feature is not None:
+                prompt = lightweight_mlp(
+                    freq_weight * frequncy_feature + embedding_weight*embedding_feature +noise_weight* noise_feature)
+            elif frequncy_feature is not None:
+                prompt = lightweight_mlp(freq_weight*frequncy_feature + embedding_weight*embedding_feature )
+            elif noise_feature is not None:
+                prompt = lightweight_mlp(embedding_weight*embedding_feature + noise_weight * noise_feature)
             else:
-                prompt = lightweight_mlp(embedding_feature )
+                prompt = lightweight_mlp(embedding_feature*embedding_weight )
             prompts.append(self.shared_mlp(prompt))
         return prompts
 
@@ -563,7 +574,7 @@ class TransformerEncoderLayer(BaseModule):
 
 
 @MODELS.register_module()
-class ViTSAMv3(BaseModule):
+class ViTSAMv35(BaseModule):
     """Vision Transformer as image encoder used in SAM.
 
     A PyTorch implement of backbone: `Segment Anything
@@ -791,7 +802,7 @@ class ViTSAMv3(BaseModule):
         self.frozen_stages = frozen_stages
         if self.frozen_stages > 0:
             self._freeze_stages()
-        self.scale_factor = 32
+        self.scale_factor = 4
         self.prompt_type = 'highpass'
         self.tuning_stage = 1234
         self.input_type = 'fft'
@@ -871,10 +882,14 @@ class ViTSAMv3(BaseModule):
 
         x, patch_resolution = self.patch_embed(x)
         embedding_feature = self.prompt_generator.init_embeddings(x)
-        # frequency_feature = self.prompt_generator.init_handcrafted(tmp)
-        # (Noise_feature, _) = self.prompt_generator.NoP(self.dncnn(inp))
-        # prompt = self.prompt_generator.get_prompt(embedding_feature, frequency_feature, Noise_feature)
-        prompt = self.prompt_generator.get_prompt(embedding_feature)
+        frequency_feature = self.prompt_generator.init_handcrafted(tmp)
+        Noise_feature = self.prompt_generator.NoP(self.dncnn(inp))
+        prompt = self.prompt_generator.get_prompt(
+            embedding_feature=embedding_feature, embedding_weight=2,
+            frequncy_feature=frequency_feature , freq_weight=4,
+            noise_feature=Noise_feature , noise_weight=4
+        )
+        # prompt = self.prompt_generator.get_prompt(embedding_feature)
         # prompt = self.prompt_generator.get_prompt(frequency_feature)
         # prompt=[prompt_n[i]+prompt_f[i] for i in range(len(prompt_f))]
         # prompt=prompt_n
@@ -900,15 +915,15 @@ class ViTSAMv3(BaseModule):
             x = prompt[i].reshape(B, patch_resolution[0], patch_resolution[1], -1) + x
             x = layer(x)
 
-            if i in self.global_attn_indexes:
-               x_reshape = x.permute(0, 3, 1, 2).contiguous()
-               outs.append(x_reshape)    #这一步在decoder输入加入了B，1280,size/16,size/16,的输入
+            # if i in self.global_attn_indexes:
+            #    x_reshape = x.permute(0, 3, 1, 2).contiguous()
+               # outs.append(x_reshape)    #这一步在decoder输入加入了B，1280,size/16,size/16,的输入
 
             if i in self.out_indices:
                 # (B, H, W, C) -> (B, C, H, W)
                 x_reshape = x.permute(0, 3, 1, 2).contiguous()
 
-                if self.out_channels > 0:
+                if self.out_channels > 0:  #vitdet不降维直接输出
                     x_reshape = self.channel_reduction(x_reshape)
                 outs.append(self._format_output(x_reshape))
 

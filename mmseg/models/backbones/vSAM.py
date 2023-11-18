@@ -257,14 +257,10 @@ class PromptGenerator(nn.Module):
             )
             setattr(self, 'lightweight_mlp_{}'.format(str(i)), lightweight_mlp)
 
-        # self.prompt_generator = PatchEmbed2(img_size=img_size,
-        #                                     patch_size=patch_size, in_chans=3,
-        #                                     embed_dim=self.embed_dim // self.scale_factor)
-        self.prompt_generator_HFC = PatchEmbed(    in_channels=3,
-                                               embed_dims=self.embed_dim // self.scale_factor,
-                                               conv_type='Conv2d',
-                                               kernel_size=patch_size,
-                                               stride=patch_size, )
+        self.prompt_generator = PatchEmbed2(img_size=img_size,
+                                            patch_size=patch_size, in_chans=3,
+                                            embed_dim=self.embed_dim // self.scale_factor)
+
         self.prompt_generator_NoP = PatchEmbed(in_channels=1,
                                                embed_dims=self.embed_dim // self.scale_factor,
                                                conv_type='Conv2d',
@@ -295,27 +291,19 @@ class PromptGenerator(nn.Module):
 
     def init_handcrafted(self, x):
         x = self.fft(x, self.freq_nums)
-        x,_=self.prompt_generator_HFC(x)
-        return x
+        return self.prompt_generator(x)
 
     def NoP(self, x):
         return self.prompt_generator_NoP(x)
 
-    def get_prompt(self, embedding_feature,handcrafted_feature:Optional=None ,other_feature:Optional=None):
+    def get_prompt(self, handcrafted_feature, embedding_feature):
         #N, C, H, W = handcrafted_feature.shape
         #handcrafted_feature = handcrafted_feature.view(N, C, H * W).permute(0, 2, 1)
         prompts = []
         for i in range(self.depth):
             lightweight_mlp = getattr(self, 'lightweight_mlp_{}'.format(str(i)))
             # prompt = proj_prompt(prompt)
-            if handcrafted_feature is not None and other_feature is not None:
-                prompt = lightweight_mlp(handcrafted_feature + embedding_feature + other_feature)
-            elif handcrafted_feature is not None:
-                prompt = lightweight_mlp(handcrafted_feature + embedding_feature )
-            elif other_feature is not None:
-                prompt = lightweight_mlp(  embedding_feature + other_feature)
-            else:
-                prompt = lightweight_mlp(embedding_feature )
+            prompt = lightweight_mlp(handcrafted_feature + embedding_feature)
             prompts.append(self.shared_mlp(prompt))
         return prompts
 
@@ -378,33 +366,33 @@ class PromptGenerator(nn.Module):
         return inv
 
 
-# class PatchEmbed2(nn.Module):
-#     """ Image to Patch Embedding
-#     """
-#
-#     def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
-#         super().__init__()
-#         img_size = to_2tuple(img_size)
-#         patch_size = to_2tuple(patch_size)
-#         num_patches = (img_size[1] // patch_size[1]) * \
-#                       (img_size[0] // patch_size[0])
-#         self.img_size = img_size
-#         self.patch_size = patch_size
-#         self.num_patches = num_patches
-#
-#         self.proj = nn.Conv2d(in_chans, embed_dim,
-#                               kernel_size=patch_size, stride=patch_size)
-#
-#     def forward(self, x):
-#         B, C, H, W = x.shape
-#         # FIXME look at relaxing size constraints
-#         assert H == self.img_size[0] and W == self.img_size[1], \
-#             f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
-#
-#         # x = F.interpolate(x, size=2*x.shape[-1], mode='bilinear', align_corners=True)
-#         x = self.proj(x)
-#         return x
-#
+class PatchEmbed2(nn.Module):
+    """ Image to Patch Embedding
+    """
+
+    def __init__(self, img_size=224, patch_size=16, in_chans=3, embed_dim=768):
+        super().__init__()
+        img_size = to_2tuple(img_size)
+        patch_size = to_2tuple(patch_size)
+        num_patches = (img_size[1] // patch_size[1]) * \
+                      (img_size[0] // patch_size[0])
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.num_patches = num_patches
+
+        self.proj = nn.Conv2d(in_chans, embed_dim,
+                              kernel_size=patch_size, stride=patch_size)
+
+    def forward(self, x):
+        B, C, H, W = x.shape
+        # FIXME look at relaxing size constraints
+        assert H == self.img_size[0] and W == self.img_size[1], \
+            f"Input image size ({H}*{W}) doesn't match model ({self.img_size[0]}*{self.img_size[1]})."
+
+        # x = F.interpolate(x, size=2*x.shape[-1], mode='bilinear', align_corners=True)
+        x = self.proj(x)
+        return x
+
 
 class Attention(nn.Module):
     """Multi-head Attention block with relative position embeddings.
@@ -563,7 +551,7 @@ class TransformerEncoderLayer(BaseModule):
 
 
 @MODELS.register_module()
-class ViTSAMv3(BaseModule):
+class SAM(BaseModule):
     """Vision Transformer as image encoder used in SAM.
 
     A PyTorch implement of backbone: `Segment Anything
@@ -777,36 +765,36 @@ class ViTSAMv3(BaseModule):
                 ),
                 LayerNorm2d(out_channels, eps=1e-6),
             )
-
-        num_levels = 17
-        out_channel = 1
-        self.dncnn = make_net(3, kernels=[3, ] * num_levels,
-                              features=[64, ] * (num_levels - 1) + [out_channel],
-                              bns=[False, ] + [True, ] * (num_levels - 2) + [False, ],
-                              acts=['relu', ] * (num_levels - 1) + ['linear', ],
-                              dilats=[1, ] * num_levels,
-                              bn_momentum=0.1, padding=1)
+        #
+        # num_levels = 17
+        # out_channel = 1
+        # self.dncnn = make_net(3, kernels=[3, ] * num_levels,
+        #                       features=[64, ] * (num_levels - 1) + [out_channel],
+        #                       bns=[False, ] + [True, ] * (num_levels - 2) + [False, ],
+        #                       acts=['relu', ] * (num_levels - 1) + ['linear', ],
+        #                       dilats=[1, ] * num_levels,
+        #                       bn_momentum=0.1, padding=1)
 
         # freeze stages only when self.frozen_stages > 0
         self.frozen_stages = frozen_stages
         if self.frozen_stages > 0:
             self._freeze_stages()
-        self.scale_factor = 32
-        self.prompt_type = 'highpass'
-        self.tuning_stage = 1234
-        self.input_type = 'fft'
-        self.freq_nums = 0.25
-        self.handcrafted_tune = True
-        self.embedding_tune = True
-        self.adaptor = 'adaptor'
-        self.depth = self.num_layers
-        self.prompt_generator = PromptGenerator(self.scale_factor, self.prompt_type, self.embed_dims,
-                                                self.tuning_stage, self.depth,
-                                                self.input_type, self.freq_nums,
-                                                self.handcrafted_tune, self.embedding_tune, self.adaptor,
-                                                img_size, patch_size)
-        self.mean = [123.675, 116.28, 103.53],
-        self.std = [58.395, 57.12, 57.375],
+        # self.scale_factor = 32
+        # self.prompt_type = 'highpass'
+        # self.tuning_stage = 1234
+        # self.input_type = 'fft'
+        # self.freq_nums = 0.25
+        # self.handcrafted_tune = True
+        # self.embedding_tune = True
+        # self.adaptor = 'adaptor'
+        # self.depth = self.num_layers
+        # self.prompt_generator = PromptGenerator(self.scale_factor, self.prompt_type, self.embed_dims,
+        #                                         self.tuning_stage, self.depth,
+        #                                         self.input_type, self.freq_nums,
+        #                                         self.handcrafted_tune, self.embedding_tune, self.adaptor,
+        #                                         img_size, patch_size)
+        # self.mean = [123.675, 116.28, 103.53],
+        # self.std = [58.395, 57.12, 57.375],
 
     def init_weights(self):
         super().init_weights()
@@ -816,14 +804,14 @@ class ViTSAMv3(BaseModule):
             if self.pos_embed is not None:
                 trunc_normal_(self.pos_embed, std=0.02)
 
-        np_weights = '/home/ipad_ind/hsguan/Forgery/mmsegmentation/pretrain/NP++.pth'
-        # np_weights="/home/ipad_ind/hszhu/pretrained/NP++.pth"
-        assert os.path.isfile(np_weights)
-        dat = torch.load(np_weights)
-        print(f'Noiseprint++ weights: {np_weights}')
-        if 'network' in dat:
-            dat = dat['network']
-        self.dncnn.load_state_dict(dat)
+        # np_weights = '/home/ipad_ind/hsguan/Forgery/mmsegmentation/pretrain/NP++.pth'
+        # # np_weights="/home/ipad_ind/hszhu/pretrained/NP++.pth"
+        # assert os.path.isfile(np_weights)
+        # dat = torch.load(np_weights)
+        # print(f'Noiseprint++ weights: {np_weights}')
+        # if 'network' in dat:
+        #     dat = dat['network']
+        # self.dncnn.load_state_dict(dat)
 
     def _freeze_stages(self):
         # freeze position embedding
@@ -833,51 +821,46 @@ class ViTSAMv3(BaseModule):
         self.drop_after_pos.eval()
         # freeze patch embedding
         self.patch_embed.eval()
-        for name,param in self.patch_embed.named_parameters():#无norm
+        for param in self.patch_embed.parameters():
             param.requires_grad = False
 
         # freeze layers
         for i in range(1, self.frozen_stages + 1):
             m = self.layers[i - 1]
             m.eval()
-            for name,param in m.named_parameters():
-                if name not in ['ln1.weight','ln1.bias','ln2.weight','ln2.bias'] :
-                    param.requires_grad = False
+            for param in m.parameters():
+                param.requires_grad = False
 
         # freeze channel_reduction module
         if self.frozen_stages == self.num_layers and self.out_channels > 0:
             m = self.channel_reduction
             m.eval()
-            for name,param in m.named_parameters(): #channel_reduction 预训练权重卷积全是1 norm 继续微调
-                # if name not in ['1.weight', '1.bias', '3.weight', '3.bias'] :
-                if name  in [ '0.weight' , '2.weight' ]:
-                    param.requires_grad = False
+            for param in m.parameters():
+                param.requires_grad = False
 
         # for name, para in self.dncnn.named_parameters():
         #    para.requires_grad = False
-        self.dncnn.eval()
-        self.dncnn.requires_grad_(False)
+        # self.dncnn.eval()
+        # self.dncnn.requires_grad_(False)
 
     def forward(self, x: torch.Tensor):
+        from startup import draw_heatmap
+        draw_heatmap(x)
         B, C, H, W = x.size()
-        tmp=x
-        inp = torch.empty((B, C, H, W), dtype=x.dtype, device=x.device)
-        mean = torch.tensor(self.mean).view(-1, 1, 1).to(x.device)
-        std = torch.tensor(self.std).view(-1, 1, 1).to(x.device)
-        for b in range(B):
-            sample = x[b]  # 取出一个样本，形状为 (C, H, W)
-            processed_sample = ((sample * std) + mean) / 255.0
-            inp[b] = processed_sample
+        # inp = torch.empty((B, C, H, W), dtype=x.dtype, device=x.device)
+        # mean = torch.tensor(self.mean).view(-1, 1, 1).to(x.device)
+        # std = torch.tensor(self.std).view(-1, 1, 1).to(x.device)
+        # for b in range(B):
+        #     sample = x[b]  # 取出一个样本，形状为 (C, H, W)
+        #     processed_sample = ((sample * std) + mean) / 255.0
+        #     inp[b] = processed_sample
 
         x, patch_resolution = self.patch_embed(x)
-        embedding_feature = self.prompt_generator.init_embeddings(x)
-        # frequency_feature = self.prompt_generator.init_handcrafted(tmp)
-        # (Noise_feature, _) = self.prompt_generator.NoP(self.dncnn(inp))
-        # prompt = self.prompt_generator.get_prompt(embedding_feature, frequency_feature, Noise_feature)
-        prompt = self.prompt_generator.get_prompt(embedding_feature)
-        # prompt = self.prompt_generator.get_prompt(frequency_feature)
-        # prompt=[prompt_n[i]+prompt_f[i] for i in range(len(prompt_f))]
-        # prompt=prompt_n
+        # embedding_feature = self.prompt_generator.init_embeddings(x)
+        # handcrafted_feature = self.prompt_generator.init_handcrafted(inp)
+        # (handcrafted_feature, _) = self.prompt_generator.NoP(self.dncnn(inp))
+        # prompt = self.prompt_generator.get_prompt(handcrafted_feature, embedding_feature)
+
         x = x.view(B, patch_resolution[0], patch_resolution[1],
                    self.embed_dims)
 
@@ -897,16 +880,18 @@ class ViTSAMv3(BaseModule):
 
         outs = []
         for i, layer in enumerate(self.layers):
-            x = prompt[i].reshape(B, patch_resolution[0], patch_resolution[1], -1) + x
+            # x = prompt[i].reshape(B, patch_resolution[0], patch_resolution[1], -1) + x
             x = layer(x)
+            featmap = x.permute(0, 3, 1, 2)
+            draw_heatmap(featmap)
 
             if i in self.global_attn_indexes:
-               x_reshape = x.permute(0, 3, 1, 2).contiguous()
-               outs.append(x_reshape)    #这一步在decoder输入加入了B，1280,size/16,size/16,的输入
+               x_reshape = x.permute(0, 3, 1, 2)
+               outs.append(x_reshape)
 
             if i in self.out_indices:
                 # (B, H, W, C) -> (B, C, H, W)
-                x_reshape = x.permute(0, 3, 1, 2).contiguous()
+                x_reshape = x.permute(0, 3, 1, 2)
 
                 if self.out_channels > 0:
                     x_reshape = self.channel_reduction(x_reshape)
