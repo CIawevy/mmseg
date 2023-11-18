@@ -2,4 +2,6 @@
 from .citys_metric import CityscapesMetric
 from .iou_metric import IoUMetric
 from .sod_metric import SodMetric
-__all__ = ['IoUMetric', 'CityscapesMetric','SodMetric']
+from .Mymetrics import MyFmeasure
+from .GHSmetrics import MyIoUMetric
+__all__ = ['IoUMetric', 'CityscapesMetric','SodMetric','MyFmeasure','MyIoUMetric']
